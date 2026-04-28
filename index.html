@@ -23,8 +23,11 @@
       <h3 class="text-center mb-4"><i class="fas fa-university"></i> Login PSS</h3>
       <input type="text" id="user" class="form-control mb-3" placeholder="Username">
       <input type="password" id="pass" class="form-control mb-3" placeholder="Password">
-      <button class="btn btn-primary w-100" onclick="login()">Masuk</button>
-      <div id="loginMsg" class="text-danger mt-2 text-center"></div>
+      <button class="btn btn-primary w-100" id="loginBtn" onclick="login()">
+        <span id="loginText">Masuk</span>
+        <span id="loginLoading" class="spinner-border spinner-border-sm d-none" role="status"></span>
+      </button>
+      <div id="loginMsg" class="text-danger mt-3 text-center" style="font-size: 0.9rem;"></div>
     </div>
   </div>
 
@@ -57,11 +60,27 @@
               <div id="extraMurid" class="col-md-6 row">
                 <div class="col-6 mb-3">
                   <label>Tingkatan</label>
-                  <input type="text" id="tingkatan" class="form-control">
+                  <select id="tingkatan" class="form-select">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="PERALIHAN">PERALIHAN</option>
+                  </select>
                 </div>
                 <div class="col-6 mb-3">
                   <label>Kelas</label>
-                  <input type="text" id="kelas" class="form-control">
+                  <select id="kelas" class="form-select">
+                    <option value="ARIF">ARIF</option>
+                    <option value="BESTARI">BESTARI</option>
+                    <option value="CEMERLANG">CEMERLANG</option>
+                    <option value="DINAMIK">DINAMIK</option>
+                    <option value="EFISIEN">EFISIEN</option>
+                    <option value="FIKRAH">FIKRAH</option>
+                    <option value="GEMILANG">GEMILANG</option>
+                    <option value="HARMONI">HARMONI</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -150,13 +169,40 @@
     async function login() {
       const u = document.getElementById('user').value;
       const p = document.getElementById('pass').value;
-      const resp = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({action: 'login', username: u, password: p}) });
-      const res = await resp.json();
-      if(res) {
-        document.getElementById('loginOverlay').style.display = 'none';
-        document.getElementById('mainApp').style.display = 'block';
-      } else {
-        document.getElementById('loginMsg').innerText = "Username/Password Salah!";
+      const btn = document.getElementById('loginBtn');
+      const text = document.getElementById('loginText');
+      const loading = document.getElementById('loginLoading');
+      const msg = document.getElementById('loginMsg');
+
+      if (!u || !p) {
+        msg.innerText = "Sila masukkan Username dan Password.";
+        return;
+      }
+
+      // Start Loading State
+      btn.disabled = true;
+      text.innerText = "Memproses...";
+      loading.classList.remove('d-none');
+      msg.innerText = "";
+
+      try {
+        const resp = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({action: 'login', username: u, password: p}) });
+        const res = await resp.json();
+        
+        if(res) {
+          document.getElementById('loginOverlay').style.display = 'none';
+          document.getElementById('mainApp').style.display = 'block';
+        } else {
+          msg.innerText = "Username/Password Salah!";
+          btn.disabled = false;
+          text.innerText = "Masuk";
+          loading.classList.add('d-none');
+        }
+      } catch (e) {
+        msg.innerText = "Ralat sambungan. Sila cuba lagi.";
+        btn.disabled = false;
+        text.innerText = "Masuk";
+        loading.classList.add('d-none');
       }
     }
 
@@ -173,6 +219,7 @@
       await fetch(scriptURL, { method: 'POST', body: JSON.stringify({action: 'simpan', formData: formData}) });
       alert("Rekod Berjaya Disimpan!");
       document.getElementById('loanForm').reset();
+      toggleForm(); // Reset visibility extraMurid
     }
 
     async function loadData(kat) {
