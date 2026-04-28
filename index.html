@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .sidebar { height: 100vh; background: #2c3e50; color: white; position: fixed; width: 250px; padding-top: 20px; }
+    .sidebar a { color: white; text-decoration: none; padding: 15px 25px; display: block; transition: 0.3s; }
+    .sidebar a:hover { background: #34495e; border-left: 5px solid #3498db; }
+    .content { margin-left: 260px; padding: 20px; }
+    .card { border: none; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .overdue { background-color: #ffcccc !important; color: #a94442 !important; font-weight: bold; }
+    #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body>
+
+  <div id="loginOverlay">
+    <div class="card p-4" style="width: 350px;">
+      <h3 class="text-center mb-4"><i class="fas fa-university"></i> Login PSS</h3>
+      <input type="text" id="user" class="form-control mb-3" placeholder="Username">
+      <input type="password" id="pass" class="form-control mb-3" placeholder="Password">
+      <button class="btn btn-primary w-100" onclick="login()">Masuk</button>
+      <div id="loginMsg" class="text-danger mt-2 text-center"></div>
+    </div>
+  </div>
+
+  <div id="mainApp" style="display:none;">
+    <div class="sidebar">
+      <h4 class="text-center mb-4">Sistem ICT PSS (v.1.0.0)</h4>
+      <a href="#" onclick="showPage('pinjam')"><i class="fas fa-plus-circle"></i> Rekod Pinjaman</a>
+      <a href="#" onclick="showPage('senarai')"><i class="fas fa-list"></i> Senarai & Pulangkan</a>
+      <a href="#" onclick="showPage('dashboard')"><i class="fas fa-chart-pie"></i> Dashboard</a>
+      <a href="#" onclick="window.top.location.reload()"><i class="fas fa-sign-out-alt"></i> Keluar</a>
+    </div>
+
+    <div class="content">
+      <div id="page-pinjam" class="page">
+        <h2><i class="fas fa-edit text-primary"></i> Rekod Pinjaman Baru</h2>
+        <div class="card p-4 mt-3">
+          <form id="loanForm">
+            <div class="mb-3">
+              <label>Kategori Peminjam</label>
+              <select class="form-select" id="kategori" onchange="toggleForm()">
+                <option value="MURID">MURID</option>
+                <option value="GURU">GURU</option>
+              </select>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label>Nama</label>
+                <input type="text" id="nama" class="form-control" required>
+              </div>
+              <div id="extraMurid" class="col-md-6 row">
+                <div class="col-6 mb-3">
+                  <label>Tingkatan</label>
+                  <input type="text" id="tingkatan" class="form-control">
+                </div>
+                <div class="col-6 mb-3">
+                  <label>Kelas</label>
+                  <input type="text" id="kelas" class="form-control">
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label>Judul Buku</label>
+                <input type="text" id="judul" class="form-control" required>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label>Jenis Buku</label>
+                <select class="form-select" id="jenisBuku">
+                  <option value="BUKU FIKSYEN">BUKU FIKSYEN</option>
+                  <option value="BUKU BUKAN FIKSYEN">BUKU BUKAN FIKSYEN</option>
+                  <option value="BUKU RUJUKAN">BUKU RUJUKAN</option>
+                </select>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label>No Perolehan</label>
+                <input type="text" id="noPerolehan" class="form-control" required>
+              </div>
+            </div>
+            <button type="button" class="btn btn-success" onclick="submitData()">Simpan Rekod</button>
+          </form>
+        </div>
+      </div>
+
+      <div id="page-senarai" class="page" style="display:none;">
+        <h2><i class="fas fa-table text-success"></i> Senarai Pinjaman Aktif</h2>
+        <div class="mt-3">
+          <ul class="nav nav-tabs" id="myTab">
+            <li class="nav-item"><a class="nav-link active" onclick="loadData('MURID')">Murid</a></li>
+            <li class="nav-item"><a class="nav-link" onclick="loadData('GURU')">Guru</a></li>
+          </ul>
+          <div class="card p-3 border-top-0">
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead id="tableHead"></thead>
+                <tbody id="tableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="page-dashboard" class="page" style="display:none;">
+        <h2><i class="fas fa-chart-line text-warning"></i> Dashboard Statistik</h2>
+        <div class="row mt-4">
+          <div class="col-md-6">
+            <div class="card p-3">
+              <h5>Bilangan Peminjam (Guru vs Murid)</h5>
+              <canvas id="barChart"></canvas>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card p-3">
+              <h5>Status Pinjaman & Pemulangan</h5>
+              <canvas id="pieChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // FUNGSI NAVIGASI
+    function showPage(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+      document.getElementById('page-' + pageId).style.display = 'block';
+      if(pageId === 'senarai') loadData('MURID');
+      if(pageId === 'dashboard') loadStats();
+    }
+
+    function toggleForm() {
+      const kat = document.getElementById('kategori').value;
+      document.getElementById('extraMurid').style.display = (kat === 'GURU') ? 'none' : 'flex';
+    }
+
+    // FUNGSI LOGIN
+    function login() {
+      const u = document.getElementById('user').value;
+      const p = document.getElementById('pass').value;
+      google.script.run.withSuccessHandler(res => {
+        if(res) {
+          document.getElementById('loginOverlay').style.display = 'none';
+          document.getElementById('mainApp').style.display = 'block';
+        } else {
+          document.getElementById('loginMsg').innerText = "Username/Password Salah!";
+        }
+      }).checkLogin(u, p);
+    }
+
+    // FUNGSI SIMPAN DATA
+    function submitData() {
+      const formData = {
+        kategori: document.getElementById('kategori').value,
+        nama: document.getElementById('nama').value,
+        tingkatan: document.getElementById('tingkatan').value,
+        kelas: document.getElementById('kelas').value,
+        judul: document.getElementById('judul').value,
+        jenisBuku: document.getElementById('jenisBuku').value,
+        noPerolehan: document.getElementById('noPerolehan').value
+      };
+      google.script.run.withSuccessHandler(() => {
+        alert("Rekod Berjaya Disimpan!");
+        document.getElementById('loanForm').reset();
+      }).simpanPinjaman(formData);
+    }
+
+    // FUNGSI LOAD DATA & KESAN LEWAT (REMARK MERAH)
+    function loadData(kat) {
+      google.script.run.withSuccessHandler(data => {
+        let head = `<tr><th>Nama</th><th>Judul</th><th>No Perolehan</th><th>Tumpoh Pulang</th><th>Status</th><th>Aksi</th></tr>`;
+        document.getElementById('tableHead').innerHTML = head;
+        
+        let rows = "";
+        const today = new Date();
+        
+        for(let i=1; i<data.length; i++) {
+          const tglPulang = new Date(data[i][kat === 'MURID' ? 8 : 5]);
+          const status = data[i][kat === 'MURID' ? 9 : 6];
+          let rowClass = (status === 'PINJAM' && today > tglPulang) ? 'overdue' : '';
+          
+          rows += `<tr class="${rowClass}">
+            <td>${data[i][1]}</td>
+            <td>${data[i][kat === 'MURID' ? 4 : 2]}</td>
+            <td>${data[i][kat === 'MURID' ? 6 : 3]}</td>
+            <td>${tglPulang.toLocaleDateString()}</td>
+            <td>${status}</td>
+            <td>
+              ${status === 'PINJAM' ? `<button class="btn btn-sm btn-primary" onclick="pulang('${data[i][0]}','${kat}')">Pulang</button>` : '<span class="badge bg-success">Selesai</span>'}
+            </td>
+          </tr>`;
+        }
+        document.getElementById('tableBody').innerHTML = rows;
+      }).dapatkanData(kat);
+    }
+
+    function pulang(id, kat) {
+      google.script.run.withSuccessHandler(res => {
+        alert(res);
+        loadData(kat);
+      }).pulangkanBuku(id, kat);
+    }
+
+    // FUNGSI DASHBOARD (GRAF)
+    let barChart, pieChart;
+    function loadStats() {
+      google.script.run.withSuccessHandler(s => {
+        const ctxBar = document.getElementById('barChart').getContext('2d');
+        if(barChart) barChart.destroy();
+        barChart = new Chart(ctxBar, {
+          type: 'bar',
+          data: {
+            labels: ['Murid', 'Guru'],
+            datasets: [{ label: 'Jumlah Peminjam', data: [s.murid, s.guru], backgroundColor: ['#3498db', '#e67e22'] }]
+          }
+        });
+
+        const ctxPie = document.getElementById('pieChart').getContext('2d');
+        if(pieChart) pieChart.destroy();
+        pieChart = new Chart(ctxPie, {
+          type: 'pie',
+          data: {
+            labels: ['Dipinjam', 'Dipulangkan'],
+            datasets: [{ data: [s.pinjamM, s.pulangM], backgroundColor: ['#e74c3c', '#2ecc71'] }]
+          }
+        });
+      }).getStatistik();
+    }
+  </script>
+</body>
+</html>
