@@ -14,13 +14,18 @@
     .card { border: none; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .overdue { background-color: #ffcccc !important; color: #a94442 !important; font-weight: bold; }
     #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; display: flex; align-items: center; justify-content: center; }
+    
+    /* Style untuk Search Suggestions */
+    .search-results { position: absolute; z-index: 1000; width: 95%; background: white; border: 1px solid #ddd; border-radius: 5px; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .search-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; }
+    .search-item:hover { background-color: #f1f1f1; }
   </style>
 </head>
 <body>
 
   <div id="loginOverlay">
     <div class="card p-4" style="width: 350px;">
-      <h3 class="text-center mb-4"><i class="fas fa-university"></i> Login PSS (v1.0.1)</h3>
+      <h3 class="text-center mb-4"><i class="fas fa-university"></i> Login PSS (v1.0.2)</h3>
       <input type="text" id="user" class="form-control mb-3" placeholder="Username">
       <input type="password" id="pass" class="form-control mb-3" placeholder="Password">
       <button class="btn btn-primary w-100" id="loginBtn" onclick="login()">
@@ -44,7 +49,7 @@
       <div id="page-pinjam" class="page">
         <h2><i class="fas fa-edit text-primary"></i> Rekod Pinjaman Baru</h2>
         <div class="card p-4 mt-3">
-          <form id="loanForm">
+          <form id="loanForm" autocomplete="off">
             <div class="mb-3">
               <label>Kategori Peminjam</label>
               <select class="form-select" id="kategori" onchange="toggleForm()">
@@ -53,34 +58,19 @@
               </select>
             </div>
             <div class="row">
-              <div class="col-md-6 mb-3">
-                <label>Nama</label>
-                <input type="text" id="nama" class="form-control" required>
+              <div class="col-md-6 mb-3 position-relative">
+                <label>Cari Nama / ID</label>
+                <input type="text" id="nama" class="form-control" placeholder="Taip nama untuk cari..." onkeyup="searchName()" required>
+                <div id="searchResults" class="search-results d-none"></div>
               </div>
               <div id="extraMurid" class="col-md-6 row">
                 <div class="col-6 mb-3">
                   <label>Tingkatan</label>
-                  <select id="tingkatan" class="form-select">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="PERALIHAN">PERALIHAN</option>
-                  </select>
+                  <input type="text" id="tingkatan" class="form-control" readonly>
                 </div>
                 <div class="col-6 mb-3">
                   <label>Kelas</label>
-                  <select id="kelas" class="form-select">
-                    <option value="ARIF">ARIF</option>
-                    <option value="BESTARI">BESTARI</option>
-                    <option value="CEMERLANG">CEMERLANG</option>
-                    <option value="DINAMIK">DINAMIK</option>
-                    <option value="EFISIEN">EFISIEN</option>
-                    <option value="FIKRAH">FIKRAH</option>
-                    <option value="GEMILANG">GEMILANG</option>
-                    <option value="HARMONI">HARMONI</option>
-                  </select>
+                  <input type="text" id="kelas" class="form-control" readonly>
                 </div>
               </div>
             </div>
@@ -128,16 +118,36 @@
       <div id="page-dashboard" class="page" style="display:none;">
         <h2><i class="fas fa-chart-line text-warning"></i> Dashboard Statistik</h2>
         <div class="row mt-4">
+          <div class="col-md-4 mb-3">
+            <div class="card p-3 text-center bg-primary text-white">
+              <h6 id="statPeratusTitle">% Penglibatan Murid</h6>
+              <h2 id="statPeratus">-</h2>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card p-3 text-center bg-success text-white">
+              <h6>Sudah Pulang</h6>
+              <h2 id="statPulang">-</h2>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card p-3 text-center bg-danger text-white">
+              <h6>Pinjaman Aktif</h6>
+              <h2 id="statPinjam">-</h2>
+            </div>
+          </div>
+        </div>
+        <div class="row mt-2">
           <div class="col-md-6 mb-3">
             <div class="card p-3 text-center">
-              <h5>Peminjam (Guru vs Murid)</h5>
-              <canvas id="barChart"></canvas>
+              <h5>Analisis Penglibatan Murid</h5>
+              <canvas id="pieChartM"></canvas>
             </div>
           </div>
           <div class="col-md-6 mb-3">
             <div class="card p-3 text-center">
-              <h5>Status Pinjaman vs Pemulangan</h5>
-              <canvas id="pieChart"></canvas>
+              <h5>Bilangan Murid vs Guru (Database)</h5>
+              <canvas id="barChart"></canvas>
             </div>
           </div>
         </div>
@@ -158,6 +168,43 @@
     function toggleForm() {
       const kat = document.getElementById('kategori').value;
       document.getElementById('extraMurid').style.display = (kat === 'GURU') ? 'none' : 'flex';
+      document.getElementById('loanForm').reset();
+      document.getElementById('kategori').value = kat;
+    }
+
+    async function searchName() {
+      const kat = document.getElementById('kategori').value;
+      const query = document.getElementById('nama').value;
+      const resDiv = document.getElementById('searchResults');
+
+      if (query.length < 3) {
+        resDiv.classList.add('d-none');
+        return;
+      }
+
+      const resp = await fetch(`${scriptURL}?action=cariPeminjam&kategori=${kat}&keyword=${query}`);
+      const data = await resp.json();
+
+      if (data.length > 0) {
+        resDiv.innerHTML = "";
+        data.forEach(item => {
+          const div = document.createElement('div');
+          div.className = "search-item";
+          div.innerHTML = `<strong>${item.nama}</strong> <small class="text-muted">(${item.id})</small>`;
+          div.onclick = () => {
+            document.getElementById('nama').value = item.nama;
+            if (kat === 'MURID') {
+              document.getElementById('tingkatan').value = item.tingkatan;
+              document.getElementById('kelas').value = item.kelas;
+            }
+            resDiv.classList.add('d-none');
+          };
+          resDiv.appendChild(div);
+        });
+        resDiv.classList.remove('d-none');
+      } else {
+        resDiv.classList.add('d-none');
+      }
     }
 
     function changeTab(kat) {
@@ -179,7 +226,6 @@
         return;
       }
 
-      // Start Loading State
       btn.disabled = true;
       text.innerText = "Memproses...";
       loading.classList.remove('d-none');
@@ -194,15 +240,11 @@
           document.getElementById('mainApp').style.display = 'block';
         } else {
           msg.innerText = "Username/Password Salah!";
-          btn.disabled = false;
-          text.innerText = "Masuk";
-          loading.classList.add('d-none');
+          btn.disabled = false; text.innerText = "Masuk"; loading.classList.add('d-none');
         }
       } catch (e) {
-        msg.innerText = "Ralat sambungan. Sila cuba lagi.";
-        btn.disabled = false;
-        text.innerText = "Masuk";
-        loading.classList.add('d-none');
+        msg.innerText = "Ralat sambungan.";
+        btn.disabled = false; text.innerText = "Masuk"; loading.classList.add('d-none');
       }
     }
 
@@ -219,7 +261,7 @@
       await fetch(scriptURL, { method: 'POST', body: JSON.stringify({action: 'simpan', formData: formData}) });
       alert("Rekod Berjaya Disimpan!");
       document.getElementById('loanForm').reset();
-      toggleForm(); // Reset visibility extraMurid
+      toggleForm();
     }
 
     async function loadData(kat) {
@@ -247,25 +289,46 @@
     }
 
     async function pulang(id, kat) {
+      if(!confirm("Sahkan pemulangan buku?")) return;
       await fetch(scriptURL, { method: 'POST', body: JSON.stringify({action: 'pulang', id: id, kategori: kat}) });
       loadData(kat);
     }
 
-    let barChart, pieChart;
+    let barChart, pieChartM;
     async function loadStats() {
       const resp = await fetch(`${scriptURL}?action=getStatistik`);
       const s = await resp.json();
+      
+      document.getElementById('statPeratus').innerText = s.peratusPenglibatanM + "%";
+      document.getElementById('statPulang').innerText = s.sudahPulang;
+      document.getElementById('statPinjam').innerText = s.peminjamAktif;
+
       const ctxB = document.getElementById('barChart').getContext('2d');
       if(barChart) barChart.destroy();
       barChart = new Chart(ctxB, {
         type: 'bar',
-        data: { labels: ['Murid', 'Guru'], datasets: [{ label: 'Bilangan', data: [s.murid, s.guru], backgroundColor: ['#3498db', '#e67e22'] }] }
+        data: { 
+          labels: ['Database Murid', 'Database Guru'], 
+          datasets: [{ 
+            label: 'Bilangan Individu', 
+            data: [s.totalMurid, s.totalGuru], 
+            backgroundColor: ['#3498db', '#e67e22'] 
+          }] 
+        },
+        options: { responsive: true }
       });
-      const ctxP = document.getElementById('pieChart').getContext('2d');
-      if(pieChart) pieChart.destroy();
-      pieChart = new Chart(ctxP, {
-        type: 'pie',
-        data: { labels: ['Pinjam', 'Pulang'], datasets: [{ data: [s.pinjamM, s.pulangM], backgroundColor: ['#e74c3c', '#2ecc71'] }] }
+
+      const ctxP = document.getElementById('pieChartM').getContext('2d');
+      if(pieChartM) pieChartM.destroy();
+      pieChartM = new Chart(ctxP, {
+        type: 'doughnut',
+        data: { 
+          labels: ['Pernah Pinjam', 'Belum Pernah'], 
+          datasets: [{ 
+            data: s.pieDataM, 
+            backgroundColor: ['#2ecc71', '#bdc3c7'] 
+          }] 
+        }
       });
     }
   </script>
