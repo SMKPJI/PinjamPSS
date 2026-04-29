@@ -14,25 +14,21 @@
     .card { border: none; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .overdue { background-color: #ffcccc !important; color: #a94442 !important; font-weight: bold; }
     #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; display: flex; align-items: center; justify-content: center; }
-    
-    /* Style untuk Search Suggestions */
     .search-results { position: absolute; z-index: 1000; width: 95%; background: white; border: 1px solid #ddd; border-radius: 5px; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
     .search-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; }
     .search-item:hover { background-color: #f1f1f1; }
+    @media print { .sidebar, .btn, .nav-tabs, h2, label { display: none !important; } .content { margin-left: 0; padding: 0; } .card { box-shadow: none; border: 1px solid #000; } }
   </style>
 </head>
 <body>
 
   <div id="loginOverlay">
     <div class="card p-4" style="width: 350px;">
-      <h3 class="text-center mb-4"><i class="fas fa-university"></i> Login PSS (v1.0.2)</h3>
+      <h3 class="text-center mb-4"><i class="fas fa-university"></i> Login PSS (v.1.0.4)</h3>
       <input type="text" id="user" class="form-control mb-3" placeholder="Username">
       <input type="password" id="pass" class="form-control mb-3" placeholder="Password">
-      <button class="btn btn-primary w-100" id="loginBtn" onclick="login()">
-        <span id="loginText">Masuk</span>
-        <span id="loginLoading" class="spinner-border spinner-border-sm d-none" role="status"></span>
-      </button>
-      <div id="loginMsg" class="text-danger mt-3 text-center" style="font-size: 0.9rem;"></div>
+      <button class="btn btn-primary w-100" id="loginBtn" onclick="login()">Masuk</button>
+      <div id="loginMsg" class="text-danger mt-3 text-center"></div>
     </div>
   </div>
 
@@ -50,35 +46,32 @@
         <h2><i class="fas fa-edit text-primary"></i> Rekod Pinjaman Baru</h2>
         <div class="card p-4 mt-3">
           <form id="loanForm" autocomplete="off">
-            <div class="mb-3">
-              <label>Kategori Peminjam</label>
-              <select class="form-select" id="kategori" onchange="toggleForm()">
-                <option value="MURID">MURID</option>
-                <option value="GURU">GURU</option>
-              </select>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label>Tarikh Pinjam (Backdated)</label>
+                <input type="date" id="tarikhManual" class="form-control">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label>Kategori Peminjam</label>
+                <select class="form-select" id="kategori" onchange="toggleForm()">
+                  <option value="MURID">MURID</option>
+                  <option value="GURU">GURU</option>
+                </select>
+              </div>
             </div>
             <div class="row">
               <div class="col-md-6 mb-3 position-relative">
                 <label>Cari Nama / ID</label>
-                <input type="text" id="nama" class="form-control" placeholder="Taip nama untuk cari..." onkeyup="searchName()" required>
+                <input type="text" id="nama" class="form-control" onkeyup="searchName()" required>
                 <div id="searchResults" class="search-results d-none"></div>
               </div>
               <div id="extraMurid" class="col-md-6 row">
-                <div class="col-6 mb-3">
-                  <label>Tingkatan</label>
-                  <input type="text" id="tingkatan" class="form-control" readonly>
-                </div>
-                <div class="col-6 mb-3">
-                  <label>Kelas</label>
-                  <input type="text" id="kelas" class="form-control" readonly>
-                </div>
+                <div class="col-6 mb-3"><label>Tingkatan</label><input type="text" id="tingkatan" class="form-control" readonly></div>
+                <div class="col-6 mb-3"><label>Kelas</label><input type="text" id="kelas" class="form-control" readonly></div>
               </div>
             </div>
             <div class="row">
-              <div class="col-md-4 mb-3">
-                <label>Judul Buku</label>
-                <input type="text" id="judul" class="form-control" required>
-              </div>
+              <div class="col-md-4 mb-3"><label>Judul Buku</label><input type="text" id="judul" class="form-control" required></div>
               <div class="col-md-4 mb-3">
                 <label>Jenis Buku</label>
                 <select class="form-select" id="jenisBuku">
@@ -87,10 +80,7 @@
                   <option value="BUKU RUJUKAN">BUKU RUJUKAN</option>
                 </select>
               </div>
-              <div class="col-md-4 mb-3">
-                <label>No Perolehan</label>
-                <input type="text" id="noPerolehan" class="form-control" required>
-              </div>
+              <div class="col-md-4 mb-3"><label>No Perolehan</label><input type="text" id="noPerolehan" class="form-control" required></div>
             </div>
             <button type="button" class="btn btn-success" onclick="submitData()">Simpan Rekod</button>
           </form>
@@ -98,7 +88,10 @@
       </div>
 
       <div id="page-senarai" class="page" style="display:none;">
-        <h2><i class="fas fa-table text-success"></i> Senarai Pinjaman Aktif</h2>
+        <div class="d-flex justify-content-between">
+          <h2><i class="fas fa-table text-success"></i> Senarai Pinjaman</h2>
+          <button class="btn btn-secondary" onclick="window.print()"><i class="fas fa-print"></i> Cetak Paparan</button>
+        </div>
         <div class="mt-3">
           <ul class="nav nav-tabs">
             <li class="nav-item"><a id="tabM" class="nav-link active" onclick="changeTab('MURID')">Murid</a></li>
@@ -106,7 +99,7 @@
           </ul>
           <div class="card p-3 border-top-0">
             <div class="table-responsive">
-              <table class="table table-hover">
+              <table class="table table-hover" id="loanTable">
                 <thead id="tableHead"></thead>
                 <tbody id="tableBody"></tbody>
               </table>
@@ -118,38 +111,22 @@
       <div id="page-dashboard" class="page" style="display:none;">
         <h2><i class="fas fa-chart-line text-warning"></i> Dashboard Statistik</h2>
         <div class="row mt-4">
-          <div class="col-md-4 mb-3">
-            <div class="card p-3 text-center bg-primary text-white">
-              <h6 id="statPeratusTitle">% Penglibatan Murid</h6>
-              <h2 id="statPeratus">-</h2>
-            </div>
+          <div class="col-md-3 mb-3">
+            <div class="card p-3 text-center bg-primary text-white"><h6>% Penglibatan</h6><h2 id="statPeratus">-</h2></div>
           </div>
-          <div class="col-md-4 mb-3">
-            <div class="card p-3 text-center bg-success text-white">
-              <h6>Sudah Pulang</h6>
-              <h2 id="statPulang">-</h2>
-            </div>
+          <div class="col-md-3 mb-3">
+            <div class="card p-3 text-center bg-success text-white"><h6>Sudah Pulang</h6><h2 id="statPulang">-</h2></div>
           </div>
-          <div class="col-md-4 mb-3">
-            <div class="card p-3 text-center bg-danger text-white">
-              <h6>Pinjaman Aktif</h6>
-              <h2 id="statPinjam">-</h2>
-            </div>
+          <div class="col-md-3 mb-3">
+            <div class="card p-3 text-center bg-info text-white"><h6>Pinjaman Aktif</h6><h2 id="statPinjam">-</h2></div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="card p-3 text-center bg-danger text-white"><h6>Lewat Hantar</h6><h2 id="statLewat">-</h2></div>
           </div>
         </div>
         <div class="row mt-2">
-          <div class="col-md-6 mb-3">
-            <div class="card p-3 text-center">
-              <h5>Analisis Penglibatan Murid</h5>
-              <canvas id="pieChartM"></canvas>
-            </div>
-          </div>
-          <div class="col-md-6 mb-3">
-            <div class="card p-3 text-center">
-              <h5>Bilangan Murid vs Guru (Database)</h5>
-              <canvas id="barChart"></canvas>
-            </div>
-          </div>
+          <div class="col-md-6 mb-3"><div class="card p-3 text-center"><h5>Analisis Penglibatan</h5><canvas id="pieChartM"></canvas></div></div>
+          <div class="col-md-6 mb-3"><div class="card p-3 text-center"><h5>Data Database</h5><canvas id="barChart"></canvas></div></div>
         </div>
       </div>
     </div>
@@ -157,6 +134,12 @@
 
   <script>
     const scriptURL = "https://script.google.com/macros/s/AKfycbwy5EVlamulgrEJhWHVLhTvVRZ-cOR8gju2BS8cBFstcYNY4rIyixLVGYoTClhY5_GijA/exec";
+
+    // Set tarikh hari ini secara default
+    window.onload = () => {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('tarikhManual').value = today;
+    };
 
     function showPage(pageId) {
       document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
@@ -167,20 +150,18 @@
 
     function toggleForm() {
       const kat = document.getElementById('kategori').value;
-      document.getElementById('extraMurid').style.display = (kat === 'GURU') ? 'none' : 'flex';
+      const tgl = document.getElementById('tarikhManual').value;
       document.getElementById('loanForm').reset();
       document.getElementById('kategori').value = kat;
+      document.getElementById('tarikhManual').value = tgl;
+      document.getElementById('extraMurid').style.display = (kat === 'GURU') ? 'none' : 'flex';
     }
 
     async function searchName() {
       const kat = document.getElementById('kategori').value;
       const query = document.getElementById('nama').value;
       const resDiv = document.getElementById('searchResults');
-
-      if (query.length < 3) {
-        resDiv.classList.add('d-none');
-        return;
-      }
+      if (query.length < 3) { resDiv.classList.add('d-none'); return; }
 
       const resp = await fetch(`${scriptURL}?action=cariPeminjam&kategori=${kat}&keyword=${query}`);
       const data = await resp.json();
@@ -190,7 +171,7 @@
         data.forEach(item => {
           const div = document.createElement('div');
           div.className = "search-item";
-          div.innerHTML = `<strong>${item.nama}</strong> <small class="text-muted">(${item.id})</small>`;
+          div.innerHTML = `<strong>${item.nama}</strong> <small>(${item.id})</small>`;
           div.onclick = () => {
             document.getElementById('nama').value = item.nama;
             if (kat === 'MURID') {
@@ -202,54 +183,25 @@
           resDiv.appendChild(div);
         });
         resDiv.classList.remove('d-none');
-      } else {
-        resDiv.classList.add('d-none');
       }
-    }
-
-    function changeTab(kat) {
-      document.getElementById('tabM').classList.toggle('active', kat === 'MURID');
-      document.getElementById('tabG').classList.toggle('active', kat === 'GURU');
-      loadData(kat);
     }
 
     async function login() {
       const u = document.getElementById('user').value;
       const p = document.getElementById('pass').value;
-      const btn = document.getElementById('loginBtn');
-      const text = document.getElementById('loginText');
-      const loading = document.getElementById('loginLoading');
-      const msg = document.getElementById('loginMsg');
-
-      if (!u || !p) {
-        msg.innerText = "Sila masukkan Username dan Password.";
-        return;
-      }
-
-      btn.disabled = true;
-      text.innerText = "Memproses...";
-      loading.classList.remove('d-none');
-      msg.innerText = "";
-
-      try {
-        const resp = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({action: 'login', username: u, password: p}) });
-        const res = await resp.json();
-        
-        if(res) {
-          document.getElementById('loginOverlay').style.display = 'none';
-          document.getElementById('mainApp').style.display = 'block';
-        } else {
-          msg.innerText = "Username/Password Salah!";
-          btn.disabled = false; text.innerText = "Masuk"; loading.classList.add('d-none');
-        }
-      } catch (e) {
-        msg.innerText = "Ralat sambungan.";
-        btn.disabled = false; text.innerText = "Masuk"; loading.classList.add('d-none');
+      const resp = await fetch(scriptURL, { method: 'POST', body: JSON.stringify({action: 'login', username: u, password: p}) });
+      const res = await resp.json();
+      if(res) {
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+      } else {
+        alert("Gagal!");
       }
     }
 
     async function submitData() {
       const formData = {
+        tarikhManual: document.getElementById('tarikhManual').value,
         kategori: document.getElementById('kategori').value,
         nama: document.getElementById('nama').value,
         tingkatan: document.getElementById('tingkatan').value,
@@ -259,19 +211,24 @@
         noPerolehan: document.getElementById('noPerolehan').value
       };
       await fetch(scriptURL, { method: 'POST', body: JSON.stringify({action: 'simpan', formData: formData}) });
-      alert("Rekod Berjaya Disimpan!");
+      alert("Berjaya!");
       document.getElementById('loanForm').reset();
       toggleForm();
+    }
+
+    function changeTab(kat) {
+      document.getElementById('tabM').classList.toggle('active', kat === 'MURID');
+      document.getElementById('tabG').classList.toggle('active', kat === 'GURU');
+      loadData(kat);
     }
 
     async function loadData(kat) {
       const resp = await fetch(`${scriptURL}?action=dapatkanData&kategori=${kat}`);
       const data = await resp.json();
-      let head = `<tr><th>Nama</th><th>Judul</th><th>No Perolehan</th><th>Tumpoh Pulang</th><th>Status</th><th>Aksi</th></tr>`;
+      let head = `<tr><th>Nama</th><th>Judul</th><th>No Perolehan</th><th>Tempoh Pulang</th><th>Status</th><th>Aksi</th></tr>`;
       document.getElementById('tableHead').innerHTML = head;
       let rows = "";
-      const today = new Date();
-      today.setHours(0,0,0,0);
+      const today = new Date(); today.setHours(0,0,0,0);
       for(let i=1; i<data.length; i++) {
         const tglPulang = new Date(data[i][kat === 'MURID' ? 8 : 5]);
         const status = data[i][kat === 'MURID' ? 9 : 6];
@@ -279,7 +236,7 @@
         rows += `<tr class="${rowClass}">
           <td>${data[i][1]}</td>
           <td>${data[i][kat === 'MURID' ? 4 : 2]}</td>
-          <td>${data[i][kat === 'MURID' ? 6 : 3]}</td>
+          <td>${data[i][6]}</td>
           <td>${tglPulang.toLocaleDateString('en-GB')}</td>
           <td>${status}</td>
           <td>${status === 'PINJAM' ? `<button class="btn btn-sm btn-primary" onclick="pulang('${data[i][0]}','${kat}')">Pulang</button>` : 'Selesai'}</td>
@@ -289,7 +246,7 @@
     }
 
     async function pulang(id, kat) {
-      if(!confirm("Sahkan pemulangan buku?")) return;
+      if(!confirm("Sahkan?")) return;
       await fetch(scriptURL, { method: 'POST', body: JSON.stringify({action: 'pulang', id: id, kategori: kat}) });
       loadData(kat);
     }
@@ -298,37 +255,23 @@
     async function loadStats() {
       const resp = await fetch(`${scriptURL}?action=getStatistik`);
       const s = await resp.json();
-      
       document.getElementById('statPeratus').innerText = s.peratusPenglibatanM + "%";
       document.getElementById('statPulang').innerText = s.sudahPulang;
       document.getElementById('statPinjam').innerText = s.peminjamAktif;
+      document.getElementById('statLewat').innerText = s.bilanganLewat;
 
       const ctxB = document.getElementById('barChart').getContext('2d');
       if(barChart) barChart.destroy();
       barChart = new Chart(ctxB, {
         type: 'bar',
-        data: { 
-          labels: ['Database Murid', 'Database Guru'], 
-          datasets: [{ 
-            label: 'Bilangan Individu', 
-            data: [s.totalMurid, s.totalGuru], 
-            backgroundColor: ['#3498db', '#e67e22'] 
-          }] 
-        },
-        options: { responsive: true }
+        data: { labels: ['Murid', 'Guru'], datasets: [{ label: 'Database', data: [s.totalMurid, s.totalGuru], backgroundColor: ['#3498db', '#e67e22'] }] }
       });
 
       const ctxP = document.getElementById('pieChartM').getContext('2d');
       if(pieChartM) pieChartM.destroy();
       pieChartM = new Chart(ctxP, {
         type: 'doughnut',
-        data: { 
-          labels: ['Pernah Pinjam', 'Belum Pernah'], 
-          datasets: [{ 
-            data: s.pieDataM, 
-            backgroundColor: ['#2ecc71', '#bdc3c7'] 
-          }] 
-        }
+        data: { labels: ['Pernah Pinjam', 'Belum'], datasets: [{ data: s.pieDataM, backgroundColor: ['#2ecc71', '#bdc3c7'] }] }
       });
     }
   </script>
