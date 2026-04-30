@@ -21,11 +21,24 @@
     /* Style Filter */
     .filter-panel { background: #f1f1f1; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd; }
 
+    /* Elemen Khas Cetakan (Sembunyi di skrin) */
+    #printHeader { display: none; }
+
     @media print { 
       .sidebar, .btn, .nav-tabs, h2, label, .filter-panel, .no-print { display: none !important; } 
-      .content { margin-left: 0; padding: 0; } 
-      .card { box-shadow: none; border: 1px solid #000; } 
-      .table td:last-child, .table th:last-child { display: none; } /* Sorok butang aksi masa cetak */
+      .content { margin-left: 0; padding: 0; width: 100%; } 
+      .card { box-shadow: none; border: none; } 
+      .table td:last-child, .table th:last-child { display: none; } /* Sorok butang aksi */
+      
+      #printHeader { 
+        display: block !important; 
+        text-align: center; 
+        margin-bottom: 20px; 
+        border-bottom: 2px solid #000;
+        padding-bottom: 10px;
+      }
+      .table { width: 100% !important; border-collapse: collapse; }
+      .table th, .table td { border: 1px solid #000 !important; padding: 8px; }
     }
   </style>
 </head>
@@ -33,7 +46,7 @@
 
   <div id="loginOverlay">
     <div class="card p-4" style="width: 350px;">
-      <h3 class="text-center mb-4"><i class="fas fa-university"></i> Login PSS (v.1.0.5)</h3>
+      <h3 class="text-center mb-4"><i class="fas fa-university"></i> Login PSS (v.1.0.6)</h3>
       <input type="text" id="user" class="form-control mb-3" placeholder="Username">
       <input type="password" id="pass" class="form-control mb-3" placeholder="Password">
       <button class="btn btn-primary w-100" id="loginBtn" onclick="login()">Masuk</button>
@@ -43,7 +56,7 @@
 
   <div id="mainApp" style="display:none;">
     <div class="sidebar">
-      <h4 class="text-center mb-4">Sistem ICT PSS</h4>
+      <h4 class="text-center mb-4">Sistem Rekod Pinjaman PSS SMK (P) Jalan Ipoh</h4>
       <a onclick="showPage('pinjam')"><i class="fas fa-plus-circle"></i> Rekod Pinjaman</a>
       <a onclick="showPage('senarai')"><i class="fas fa-list"></i> Senarai & Pulangkan</a>
       <a onclick="showPage('dashboard')"><i class="fas fa-chart-pie"></i> Dashboard</a>
@@ -97,9 +110,16 @@
       </div>
 
       <div id="page-senarai" class="page" style="display:none;">
+        <div id="printHeader">
+          <h2 style="margin:0;">LAPORAN REKOD PINJAMAN PUSAT SUMBER SEKOLAH</h2>
+          <p style="margin:5px 0;">Sistem Pengurusan ICT PSS</p>
+          <h4 id="printCategoryLabel" style="text-transform: uppercase;">KATEGORI: -</h4>
+          <p id="printDateLabel">Tarikh Cetakan: -</p>
+        </div>
+
         <div class="d-flex justify-content-between">
           <h2><i class="fas fa-table text-success"></i> Senarai Pinjaman</h2>
-          <button class="btn btn-secondary" onclick="window.print()"><i class="fas fa-print"></i> Cetak Paparan</button>
+          <button class="btn btn-secondary" onclick="prepAndPrint()"><i class="fas fa-print"></i> Cetak Paparan</button>
         </div>
         
         <div class="mt-3">
@@ -195,6 +215,14 @@
       document.getElementById('tarikhManual').value = today;
     };
 
+    function prepAndPrint() {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-GB') + " " + now.toLocaleTimeString('en-GB');
+      document.getElementById('printCategoryLabel').innerText = "KATEGORI: " + currentKat;
+      document.getElementById('printDateLabel').innerText = "Tarikh Cetakan: " + dateStr;
+      window.print();
+    }
+
     function showPage(pageId) {
       document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
       document.getElementById('page-' + pageId).style.display = 'block';
@@ -274,7 +302,6 @@
       currentKat = kat;
       document.getElementById('tabM').classList.toggle('active', kat === 'MURID');
       document.getElementById('tabG').classList.toggle('active', kat === 'GURU');
-      // Reset filter bila tukar tab
       document.getElementById('fBulan').value = "";
       document.getElementById('fJenis').value = "";
       document.getElementById('fStatus').value = "";
@@ -286,25 +313,21 @@
     async function loadData(kat) {
       const resp = await fetch(`${scriptURL}?action=dapatkanData&kategori=${kat}`);
       const data = await resp.json();
-      let head = `<tr><th>Nama</th><th>Judul</th><th>No Perolehan</th><th>Tempoh Pulang</th><th>Status</th><th>Aksi</th><th style="display:none">DataTapis</th></tr>`;
+      let head = `<tr><th>Nama</th><th>Judul</th><th>No Perolehan</th><th>Tempoh Pulang</th><th>Status</th><th class="no-print">Aksi</th><th style="display:none">DataTapis</th></tr>`;
       document.getElementById('tableHead').innerHTML = head;
       let rows = "";
       const today = new Date(); today.setHours(0,0,0,0);
       for(let i=1; i<data.length; i++) {
-        // Tarikh Pulang: Murid index 8, Guru index 5
         const tglPulangStr = data[i][kat === 'MURID' ? 8 : 5];
         const tglPulang = new Date(tglPulangStr);
-        // Tarikh Pinjam: Murid index 7, Guru index 4 (untuk filter bulan)
         const tglPinjam = new Date(data[i][kat === 'MURID' ? 7 : 4]);
         const bulanPinjam = ("0" + (tglPinjam.getMonth() + 1)).slice(-2);
         
         const status = data[i][kat === 'MURID' ? 9 : 6];
-        const jenisBuku = data[i][kat === 'MURID' ? 5 : 2]; // Murid col 5, Guru col 2
+        const jenisBuku = data[i][kat === 'MURID' ? 5 : 2];
         const isLewat = (status === 'PINJAM' && today > tglPulang) ? 'YA' : 'TIDAK';
         
         let rowClass = (isLewat === 'YA') ? 'overdue' : '';
-        
-        // Simpan data hidden untuk filtering
         const filterData = `${bulanPinjam}|${jenisBuku}|${status}|${isLewat}`.toUpperCase();
 
         rows += `<tr class="${rowClass}" data-filter="${filterData}">
@@ -313,7 +336,7 @@
           <td>${data[i][kat === 'MURID' ? 6 : 3]}</td>
           <td>${tglPulang.toLocaleDateString('en-GB')}</td>
           <td>${status}</td>
-          <td>${status === 'PINJAM' ? `<button class="btn btn-sm btn-primary no-print" onclick="pulang('${data[i][0]}','${kat}')">Pulang</button>` : 'Selesai'}</td>
+          <td class="no-print">${status === 'PINJAM' ? `<button class="btn btn-sm btn-primary" onclick="pulang('${data[i][0]}','${kat}')">Pulang</button>` : 'Selesai'}</td>
           <td style="display:none">${filterData}</td>
         </tr>`;
       }
@@ -330,7 +353,7 @@
       const rows = document.querySelectorAll("#tableBody tr");
       
       rows.forEach(row => {
-        const filterAttr = row.getAttribute('data-filter'); // Bulan|Jenis|Status|Lewat
+        const filterAttr = row.getAttribute('data-filter');
         const [rBulan, rJenis, rStatus, rLewat] = filterAttr.split('|');
         const text = row.innerText.toUpperCase();
         
